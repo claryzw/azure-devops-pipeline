@@ -1,0 +1,57 @@
+# ============================================================
+# .dockerignore — Files to EXCLUDE from the Docker image
+# Think of this like .gitignore, but for Docker builds
+# Smaller image = faster deploys = lower ACR storage costs
+# ============================================================
+
+# Git files — not needed in production
+.git
+.gitignore
+
+# GitHub Actions — only runs in CI, not inside the container
+.github/
+
+# Infrastructure code — Bicep runs separately, not inside the app
+infrastructure/
+
+# Tests — run in CI pipeline, not in the production container
+tests/
+
+# Python cache files — regenerated at runtime
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Virtual environment — dependencies are installed fresh in the image
+venv/
+.venv/
+env/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation — not needed in the running container
+*.md
+docs/
+LICENSE
+
+# Docker files — no need to copy Dockerfile into itself
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Environment files — secrets should come from Azure, not files
+.env
+.env.*
+
+# Linting config — only needed during CI
+.flake8
