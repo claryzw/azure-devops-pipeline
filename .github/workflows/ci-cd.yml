@@ -76,10 +76,9 @@ jobs:
           severity: "HIGH,CRITICAL"
 
       # Steps 8-10: Push to ACR (only on main branch, not PRs)
-      # continue-on-error for first run — ACR does not exist yet
       - name: Login to Azure Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-                uses: azure/docker-login@v2
+        uses: azure/docker-login@v2
         with:
           login-server: ${{ secrets.ACR_LOGIN_SERVER }}
           username: ${{ secrets.ACR_USERNAME }}
@@ -87,13 +86,13 @@ jobs:
 
       - name: Tag image for ACR
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-                run: |
+        run: |
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:latest ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:latest
 
       - name: Push image to ACR
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-                run: |
+        run: |
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:latest
 
