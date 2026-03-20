@@ -55,7 +55,7 @@ jobs:
           pytest tests/ -v
 
       # Step 5: Run flake8 linter
-     - name: Run linter
+      - name: Run linter
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           flake8 app/ tests/
@@ -187,4 +187,3 @@ jobs:
 
           echo "Health check failed after 120 seconds"
           exit 1
-
