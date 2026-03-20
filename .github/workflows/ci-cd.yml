@@ -1,0 +1,185 @@
+# ============================================================
+# CI/CD Pipeline for Azure DevOps Pipeline Project
+# Author: Clarence Itai Msindo
+# Purpose: Build, test, scan, and deploy Flask app to Azure
+# ============================================================
+
+name: CI/CD Pipeline
+
+# --- TRIGGERS ---
+# Run this pipeline on pushes to main and on pull requests to main
+# Think of this like inotifywait on Linux — it watches for file changes
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# --- ENVIRONMENT VARIABLES ---
+# Shared across all jobs — like exporting variables in .bashrc
+env:
+  DOCKER_IMAGE_NAME: flask-app
+  DOCKER_IMAGE_TAG: ${{ github.sha }}
+
+# --- JOBS ---
+jobs:
+
+  # ============================================================
+  # JOB 1: BUILD AND TEST (CI)
+  # Runs on every push and PR — the quality gate
+  # ============================================================
+  build-and-test:
+    name: Build, Test & Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Clone the repo into the runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python 3.11 on the runner
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 4: Run tests with pytest
+      - name: Run tests
+        run: pytest tests/ -v
+
+      # Step 5: Run flake8 linter
+      - name: Run linter
+        run: flake8 app/ tests/
+
+      # Step 6: Build the Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} .
+          docker build -t ${{ env.DOCKER_IMAGE_NAME }}:latest .
+
+      # Step 7: Scan the image with Trivy
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.DOCKER_IMAGE_NAME }}:latest"
+          format: "table"
+          exit-code: "1"
+          severity: "HIGH,CRITICAL"
+
+      # Steps 8-10: Push to ACR (only on main branch, not PRs)
+      # continue-on-error for first run — ACR does not exist yet
+      - name: Login to Azure Container Registry
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        continue-on-error: true
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Tag image for ACR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:latest ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+
+      - name: Push image to ACR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+
+  # ============================================================
+  # JOB 2: DEPLOY (CD)
+  # Only runs after CI passes, only on main branch
+  # ============================================================
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      # Step 1: Clone the repo (needed for Bicep files)
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Login to Azure using the service principal
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      # Step 3: Deploy Bicep infrastructure
+      - name: Deploy Bicep infrastructure
+        uses: azure/arm-deploy@v2
+        id: bicep
+        with:
+          resourceGroupName: devops-pipeline-rg
+          template: ./infrastructure/main.bicep
+          parameters: ./infrastructure/parameters.json
+          failOnStdErr: false
+
+      # Step 4: Get ACR credentials from the deployment
+      - name: Get ACR credentials
+        id: acr
+        run: |
+          ACR_NAME=$(az acr list --resource-group devops-pipeline-rg --query "[0].name" --output tsv)
+          ACR_SERVER=$(az acr show --name $ACR_NAME --query "loginServer" --output tsv)
+          ACR_USERNAME=$(az acr credential show --name $ACR_NAME --query "username" --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" --output tsv)
+
+          echo "server=$ACR_SERVER" >> $GITHUB_OUTPUT
+          echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "::add-mask::$ACR_PASSWORD"
+          echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+      # Step 5: Build and push Docker image to ACR
+      - name: Build and push to ACR
+        run: |
+          echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.server }} --username ${{ steps.acr.outputs.username }} --password-stdin
+
+          docker build -t ${{ steps.acr.outputs.server }}/flask-app:${{ github.sha }} .
+          docker build -t ${{ steps.acr.outputs.server }}/flask-app:latest .
+
+          docker push ${{ steps.acr.outputs.server }}/flask-app:${{ github.sha }}
+          docker push ${{ steps.acr.outputs.server }}/flask-app:latest
+
+      # Step 6: Deploy to Web App
+      - name: Deploy to Web App
+        run: |
+          WEBAPP_NAME=$(az webapp list --resource-group devops-pipeline-rg --query "[0].name" --output tsv)
+
+          az webapp restart --name $WEBAPP_NAME --resource-group devops-pipeline-rg
+
+          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_ENV
+
+      # Step 7: Health check — verify the app is running
+      - name: Health check
+        run: |
+          WEBAPP_URL="https://${webapp_name}.azurewebsites.net/health"
+          echo "Checking health at: $WEBAPP_URL"
+
+          for i in $(seq 1 12); do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$WEBAPP_URL" || echo "000")
+            echo "Attempt $i: HTTP $HTTP_CODE"
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Health check passed!"
+              curl -s "$WEBAPP_URL" | python3 -m json.tool
+              exit 0
+            fi
+
+            echo "Waiting 10 seconds..."
+            sleep 10
+          done
+
+          echo "Health check failed after 120 seconds"
+          exit 1
