@@ -10,6 +10,5 @@ pytest==8.3.4
 # Linting — enforces clean, consistent Python code
 flake8==7.1.1
 
-# Azure Application Insights monitoring
-opencensus-ext-azure==1.1.13
-opencensus-ext-flask==0.8.2
+# Azure Application Insights monitoring (OpenTelemetry)
+azure-monitor-opentelemetry==1.6.4
