@@ -60,12 +60,14 @@ def info():
     Returns hostname, Python version, timestamp, and environment.
     Useful for debugging which container instance is responding.
     """
-    return jsonify({
+
+  return jsonify({
         "hostname": platform.node(),
         "python_version": platform.python_version(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "environment": os.getenv("FLASK_ENV", "production")
     })
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
