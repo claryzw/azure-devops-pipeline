@@ -2,17 +2,31 @@
 Flask application for Azure DevOps CI/CD Pipeline project.
 Provides a home page, health check endpoint, and system info API.
 """
-
 import os
 import platform
 from datetime import datetime, timezone
-
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 
 # Application version — update this when you release new features
 VERSION = "1.0.0"
+
+# --- Application Insights Integration ---
+# Connects to Azure Monitor using the connection string from App Service.
+# Only activates when APPLICATIONINSIGHTS_CONNECTION_STRING is set,
+# so your app still works locally without Azure credentials.
+connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+if connection_string:
+    from opencensus.ext.azure.trace_exporter import AzureExporter
+    from opencensus.ext.flask.flask_middleware import FlaskMiddleware
+    from opencensus.trace.samplers import ProbabilitySampler
+
+    FlaskMiddleware(
+        app,
+        exporter=AzureExporter(connection_string=connection_string),
+        sampler=ProbabilitySampler(rate=1.0)  # Track 100% of requests
+    )
 
 
 @app.route("/")
@@ -45,8 +59,6 @@ def info():
     System info endpoint.
     Returns hostname, Python version, timestamp, and environment.
     Useful for debugging which container instance is responding.
-    Uses platform.node() instead of os.uname() — works on both
-    Windows and Linux, so you can test locally and deploy to Docker.
     """
     return jsonify({
         "hostname": platform.node(),
