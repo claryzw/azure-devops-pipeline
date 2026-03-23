@@ -7,26 +7,19 @@ import platform
 from datetime import datetime, timezone
 from flask import Flask, jsonify, render_template
 
+
 app = Flask(__name__)
 
 # Application version — update this when you release new features
 VERSION = "1.0.0"
 
-# --- Application Insights Integration ---
+# --- Application Insights Integration (OpenTelemetry) ---
 # Connects to Azure Monitor using the connection string from App Service.
 # Only activates when APPLICATIONINSIGHTS_CONNECTION_STRING is set,
 # so your app still works locally without Azure credentials.
-connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
-if connection_string:
-    from opencensus.ext.azure.trace_exporter import AzureExporter
-    from opencensus.ext.flask.flask_middleware import FlaskMiddleware
-    from opencensus.trace.samplers import ProbabilitySampler
-
-    FlaskMiddleware(
-        app,
-        exporter=AzureExporter(connection_string=connection_string),
-        sampler=ProbabilitySampler(rate=1.0)  # Track 100% of requests
-    )
+if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+    from azure.monitor.opentelemetry import configure_azure_monitor
+    configure_azure_monitor()
 
 
 @app.route("/")
@@ -60,8 +53,7 @@ def info():
     Returns hostname, Python version, timestamp, and environment.
     Useful for debugging which container instance is responding.
     """
-
-  return jsonify({
+    return jsonify({
         "hostname": platform.node(),
         "python_version": platform.python_version(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
