@@ -107,12 +107,12 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      # Step 1: Clone the repo (needed for Bicep files)
+     # Step 1: Clone the repo (needed for Bicep files)
       - name: Checkout code
         uses: actions/checkout@v4
 
       # Step 2: Login to Azure using the service principal
-        - name: Login to Azure
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
