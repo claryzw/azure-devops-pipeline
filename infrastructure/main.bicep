@@ -193,6 +193,43 @@ resource responseTimeAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   }
 }
 
+// --- 8. Alert Rule: High Failure Rate ---
+// Triggers when more than 5 failed requests occur in a 5-minute window
+resource failureRateAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: '${projectPrefix}-high-failures-${environment}'
+  location: 'global'
+  properties: {
+    description: 'Alert when failed request rate exceeds 5 percent'
+    severity: 1
+    enabled: true
+    scopes: [
+      webApp.id
+    ]
+    evaluationFrequency: 'PT1M'
+    windowSize: 'PT5M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'HighFailureRate'
+          metricName: 'Http5xx'
+          metricNamespace: 'Microsoft.Web/sites'
+          operator: 'GreaterThan'
+          threshold: 5
+          timeAggregation: 'Total'
+          criterionType: 'StaticThresholdCriterion'
+        }
+      ]
+    }
+    actions: [
+      {
+        actionGroupId: actionGroup.id
+      }
+    ]
+  }
+}
+
+
 // ============================================================================
 // OUTPUTS
 // ============================================================================
