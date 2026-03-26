@@ -24,12 +24,11 @@ WORKDIR /app
 # Copy requirements.txt FIRST (layer caching optimisation)
 COPY requirements.txt .
 
-# Install Python dependencies, then remove unnecessary build tools
+# Install Python dependencies, then remove build tools to reduce vulnerabilities
 # --no-cache-dir: do not store pip cache (smaller image)
-# Keep setuptools — needed by OpenTelemetry at runtime (pkg_resources)
-# Removing pip and wheel eliminates Trivy findings for unused tools
+# Removing pip, setuptools, and wheel eliminates Trivy findings
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip uninstall -y pip wheel \
+    && pip uninstall -y pip setuptools wheel \
     && rm -rf /root/.cache
 
 # Copy the rest of the application code
