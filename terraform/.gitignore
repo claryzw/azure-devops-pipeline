@@ -1,0 +1,24 @@
+# Terraform state files - NEVER commit these
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform working directory - contains downloaded providers (huge files)
+.terraform/
+.terraform.lock.hcl
+
+# Variable files that may contain secrets
+*.tfvars.local
+secrets.auto.tfvars
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Plan output files 
+*.tfplan
+tfplan
+
+# Never commit variable files - they contain subscription IDs and secrets
+terraform.tfvars
+*.auto.tfvars
