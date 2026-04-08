@@ -280,8 +280,6 @@ Application Insights is integrated into the Flask app using the `azure-monitor-o
 
 <!-- PROJECT STRUCTURE -->
 ## Project Structure
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ```
 azure-devops-pipeline/
 ├── app/
@@ -309,6 +307,8 @@ azure-devops-pipeline/
 ├── .flake8                    # Linter configuration
 └── README.md
 ```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ---
 
 <!-- WHAT I LEARNED -->
