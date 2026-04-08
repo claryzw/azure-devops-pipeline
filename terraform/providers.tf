@@ -17,7 +17,14 @@ terraform {
 # Configure the Azure Resource Manager provider
 # The "features" block is mandatory - even if empty - for the azurerm provider
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      # Allow Terraform to delete resource groups that contain Azure-managed
+      # "ghost" resources (like Application Insights Smart Detection action groups).
+      # These are auto-created by Azure and not tracked by Terraform.
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 
   # Subscription ID is pulled from terraform.tfvars (not hardcoded here)
   # This keeps secrets out of version control
