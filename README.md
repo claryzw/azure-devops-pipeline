@@ -7,6 +7,7 @@
 [![Docker][docker-shield]][docker-url]
 [![Azure][azure-shield]][azure-url]
 [![Terraform][terraform-shield]][terraform-url]
+[![Kubernetes][kubernetes-shield]][kubernetes-url]
 [![License: MIT][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
@@ -242,8 +243,6 @@ Standard workflow: `init` → `fmt` → `validate` → `plan -out=tfplan` → `a
 
 I tear down resources after each phase to protect free tier credits, and either tool can rebuild everything from scratch in under 2 minutes.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ## Kubernetes Deployment (Local with Minikube)
 
 The same Flask application also runs on Kubernetes. I built local Kubernetes competence first using minikube, with the manifests written to be portable to a real AKS cluster later. The point is to prove that the Phase 3 Docker image is platform-agnostic: same image, three deployment targets (Bicep App Service, Terraform App Service, and Kubernetes).
@@ -263,8 +262,8 @@ The same Flask application also runs on Kubernetes. I built local Kubernetes com
 ```
 kubernetes/
 └── manifests/
-├── flask-app-deployment.yaml   # 2 replicas, probes, resource limits
-└── flask-app-service.yaml      # NodePort service with 80 to 8000 port translation
+    ├── flask-app-deployment.yaml   # 2 replicas, probes, resource limits
+    └── flask-app-service.yaml      # NodePort service with 80 to 8000 port translation
 ```
 ### How to run locally
 
@@ -468,3 +467,5 @@ Project Link: [github.com/claryzw/azure-devops-pipeline](https://github.com/clar
 [flask-shield]: https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white
 [flask-url]: https://flask.palletsprojects.com/
 [actions-shield]: https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white
+[kubernetes-shield]: https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white
+[kubernetes-url]: https://kubernetes.io/
