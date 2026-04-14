@@ -89,6 +89,7 @@ The full pipeline takes **3 minutes 30 seconds** from push to live application. 
 * ![GitHub Actions][actions-shield]
 * [![Azure][azure-shield]][azure-url]
 * [![Terraform][terraform-shield]][terraform-url]
+* [![Kubernetes][kubernetes-shield]][kubernetes-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -243,6 +244,59 @@ I tear down resources after each phase to protect free tier credits, and either 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Kubernetes Deployment (Local with Minikube)
+
+The same Flask application also runs on Kubernetes. I built local Kubernetes competence first using minikube, with the manifests written to be portable to a real AKS cluster later. The point is to prove that the Phase 3 Docker image is platform-agnostic: same image, three deployment targets (Bicep App Service, Terraform App Service, and Kubernetes).
+
+### What this phase covers
+
+- Local Kubernetes cluster running on minikube with the Docker driver
+- Declarative YAML manifests for the Flask Deployment and Service
+- Pod self-healing through the ReplicaSet controller, verified by manually deleting a pod and watching a replacement appear within seconds
+- Service-based load balancing across 2 Flask replicas, visible through the `/api/info` endpoint that returns the pod hostname
+- Liveness and readiness probes hitting the existing `/health` endpoint from Phase 2
+- CPU and memory requests and limits on every container
+- Non-root container user inherited from the Phase 3 Dockerfile
+- Idempotent applies through `kubectl apply -f kubernetes/manifests/`, the same pattern GitOps tools use under the hood
+
+### Folder structure
+```
+kubernetes/
+└── manifests/
+├── flask-app-deployment.yaml   # 2 replicas, probes, resource limits
+└── flask-app-service.yaml      # NodePort service with 80 to 8000 port translation
+```
+### How to run locally
+
+```powershell
+# Start the cluster
+minikube start --driver=docker
+
+# Point Docker at minikube's internal daemon so the build goes inside the cluster
+& minikube -p minikube docker-env --shell powershell | Invoke-Expression
+
+# Build the Flask image into minikube
+docker build -t flask-app:local .
+
+# Apply the manifests
+kubectl apply -f kubernetes/manifests/
+
+# Verify
+kubectl get pods -l app=flask-app
+kubectl get service flask-app
+
+# Open in browser
+minikube service flask-app
+```
+
+The `/api/info` endpoint returns the pod hostname using Python's `socket.gethostname()`, which makes Service load balancing visible: refreshing the endpoint shows different pod names served behind the same Service IP.
+
+### What is next
+
+- AKS deployment using Terraform to provision the cluster, ACR integration via image pull secrets, and a real LoadBalancer Service with a public IP
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ---
 
 <!-- DOCKER SECURITY -->
@@ -344,7 +398,8 @@ This project taught me that DevOps work goes well beyond writing YAML files. The
 - [x] Architecture diagram
 - [x] Terraform alternative for multi-cloud IaC (8 resources)
 - [ ] Remote Terraform state in Azure Storage with state locking
-- [ ] Kubernetes (AKS) deployment
+- [x] Kubernetes local deployment with minikube and declarative YAML manifests
+- [ ] Kubernetes (AKS) cloud deployment with Terraform-provisioned cluster
 - [ ] Staging environment with blue-green deployment
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
