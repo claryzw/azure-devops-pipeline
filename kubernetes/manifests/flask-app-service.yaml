@@ -1,0 +1,18 @@
+# flask-app-service.yaml
+# Exposes the Flask Deployment via NodePort for minikube browser access.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-app
+  labels:
+    app: flask-app
+spec:
+  type: NodePort
+  selector:
+    app: flask-app               # Matches the pod labels from the Deployment
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80                   # External port (what users hit)
+      targetPort: 8000           # Internal port (where Gunicorn listens)

@@ -1,0 +1,53 @@
+# flask-app-deployment.yaml
+# Runs the Phase 3 Flask container image built locally into minikube.
+# This is the Kubernetes equivalent of `docker run` from Phase 3,
+# but with 2 replicas, resource limits, and health probes.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+  labels:
+    app: flask-app
+spec:
+  replicas: 2                         # Two replicas = proof of load balancing
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      containers:
+        - name: flask-app
+          image: flask-app:local       # The local image we just built
+          imagePullPolicy: IfNotPresent  # CRITICAL: do not try to pull from Docker Hub
+          ports:
+            - name: http
+              containerPort: 8000      # Gunicorn binds to 8000 (from your Phase 3 Dockerfile)
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          # Liveness probe: "is this pod alive?" - K8s restarts it if this fails
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10    # Wait 10s after start before first check
+            periodSeconds: 15          # Check every 15s thereafter
+            timeoutSeconds: 3
+            failureThreshold: 3        # 3 consecutive failures = restart
+          # Readiness probe: "is this pod ready to receive traffic?"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
