@@ -345,6 +345,10 @@ azure-devops-pipeline/
 ├── infrastructure/
 │   ├── main.bicep             # 8 Azure resources defined in Bicep
 │   └── parameters.json        # Environment-specific configuration
+├── kubernetes/
+│   └── manifests/
+│       ├── flask-app-deployment.yaml   # 2 replicas, probes, resource limits
+│       └── flask-app-service.yaml      # NodePort Service (80 → 8000)
 ├── terraform/
 │   ├── providers.tf           # azurerm v4.x provider pinning
 │   ├── variables.tf           # Input variables with validation
