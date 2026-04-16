@@ -392,6 +392,7 @@ This project taught me that DevOps work goes well beyond writing YAML files. The
 <!-- ROADMAP -->
 ## Roadmap
 
+### Completed
 - [x] Flask application with health check and info endpoints
 - [x] Docker containerisation with security hardening
 - [x] Azure Bicep infrastructure as code (8 resources)
@@ -400,9 +401,12 @@ This project taught me that DevOps work goes well beyond writing YAML files. The
 - [x] Automated alert rules for response time and failure rate
 - [x] Architecture diagram
 - [x] Terraform alternative for multi-cloud IaC (8 resources)
-- [ ] Remote Terraform state in Azure Storage with state locking
+- [x] Remote Terraform state in Azure Storage with state locking
 - [x] Kubernetes local deployment with minikube and declarative YAML manifests
 - [ ] Kubernetes (AKS) cloud deployment with Terraform-provisioned cluster
+- [ ] GitOps deployment with ArgoCD
+- [ ] Observability stack with Prometheus, Grafana, and Loki
+- [ ] Secrets management with Azure Key Vault and CSI driver
 - [ ] Staging environment with blue-green deployment
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
