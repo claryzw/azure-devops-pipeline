@@ -391,8 +391,6 @@ This project taught me that DevOps work goes well beyond writing YAML files. The
 
 <!-- ROADMAP -->
 ## Roadmap
-
-### Completed
 - [x] Flask application with health check and info endpoints
 - [x] Docker containerisation with security hardening
 - [x] Azure Bicep infrastructure as code (8 resources)
